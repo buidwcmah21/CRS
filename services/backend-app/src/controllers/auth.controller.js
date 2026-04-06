@@ -1,54 +1,61 @@
-// src/controllers/auth.controller.js
-const authService = require('../services/auth.service');
+const bcrypt = require('bcryptjs');
+const pool = require('../config/db');
+const jwt = require('jsonwebtoken');
 
-const register = async (req, res) => {
-  try {
-    const { email, password, fullName, role } = req.body;
+// Hàm Đăng ký
+exports.register = async (req, res) => {
+    const { email, password, full_name } = req.body;
+    try {
+        // 1. Kiểm tra email đã tồn tại chưa
+        const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        if (userExists.rows.length > 0) {
+            return res.status(400).json({ message: 'Email đã được sử dụng' });
+        }
 
-    // Basic validation
-    if (!email || !password || !fullName || !role) {
-      return res.status(400).json({ message: 'All fields are required' });
+        // 2. Hash mật khẩu
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // 3. Lưu vào DB (Mặc định role là STUDENT)
+        const newUser = await pool.query(
+            'INSERT INTO users (email, password_hash, full_name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, role',
+            [email, hashedPassword, full_name, 'STUDENT']
+        );
+
+        res.status(201).json({ message: 'Đăng ký thành công', user: newUser.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Lỗi server', error: error.message });
     }
-
-    const newUser = await authService.registerUser(email, password, fullName, role);
-    res.status(201).json(newUser);
-  } catch (error) {
-    // Send a specific error if the email is taken
-    res.status(409).json({ message: error.message }); // 409 Conflict
-  }
 };
 
-const login = async (req, res) => {
-  try {
+// Hàm Đăng nhập (Giữ lại logic cũ của bạn nhưng đảm bảo dùng JWT_SECRET từ env)
+exports.login = async (req, res) => {
     const { email, password } = req.body;
+    try {
+        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        const user = result.rows[0];
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+        if (!user) {
+            return res.status(401).json({ message: 'Email không tồn tại' });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Mật khẩu không đúng' });
+        }
+
+        const token = jwt.sign(
+            { id: user.id, role: user.role },
+            process.env.JWT_SECRET || 'your-fallback-secret',
+            { expiresIn: '24h' }
+        );
+
+        res.json({
+            token,
+            user: { id: user.id, email: user.email, full_name: user.full_name, role: user.role }
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi server' });
     }
-
-    const result = await authService.loginUser(email, password);
-    res.status(200).json(result);
-  } catch (error) {
-    // Send a generic 401 Unauthorized for login failures
-    res.status(401).json({ message: error.message });
-  }
-};
-
-const getUser = async (req, res) => {
-  try {
-    const token = req.headers['token'];
-    if (!token) {
-      return res.status(400).json({ message: 'JWT token is required' });
-    }
-    const result = await authService.getUser(token);
-    res.status(200).json(result);
-  } catch (error) {
-    res.status(404).json({ message: error.message });
-  }
-}
-
-module.exports = {
-  register,
-  login,
-  getUser
 };

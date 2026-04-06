@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
 
 	const handleLogIn = (data) => {
 		axios
-			.post('http://localhost:3000/api/auth/login', data)
+			.post('http://localhost:8000/api/auth/login', data)
 			.then((response) => {
 				const token = response.data.token
 				if (token) {

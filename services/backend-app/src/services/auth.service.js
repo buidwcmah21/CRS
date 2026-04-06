@@ -3,8 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const userRepository = require('../repositories/user.repository');
 
-// In a real production app, this secret MUST be in a .env file!
-const JWT_SECRET = 'your-super-secret-key-that-is-long-and-random';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 /**
  * Business logic to register a new user.

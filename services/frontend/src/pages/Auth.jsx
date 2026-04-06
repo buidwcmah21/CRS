@@ -1,50 +1,60 @@
-import { useState } from "react";
-import { useAuth } from "../AuthProvider";
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../AuthProvider';
 
 const Auth = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const { handleLogIn } = useAuth();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const { handleLogIn } = useAuth(); // Lấy đúng tên hàm handleLogIn từ AuthProvider
 
-  return (
-    <div className="position-relative h-100">
-      <div className="auth mt-5 p-lg-5 p-3 rounded-5 position-absolute top-50 start-50 translate-middle">
-        <h1 className="fw-bold mb-lg-3">Central Authentication Service</h1>
-        <h3 className="mb-lg-5 mb-3">Enter your Email and Password</h3>
-        <div className="d-flex flex-column mb-lg-4 mb-2">
-          <label className="form-label" for="emailInput">Email address</label>
-          <input
-            className="form-control"
-            id="emailInput"
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        // Truyền dữ liệu vào hàm handleLogIn như AuthProvider yêu cầu
+        handleLogIn({ email, password });
+    };
+
+    return (
+        <div className="container mt-5">
+            <div className="row justify-content-center">
+                <div className="col-md-6 bg-light p-5 rounded shadow">
+                    <h1 className="display-6 fw-bold mb-4 text-center">Central Authentication Service</h1>
+                    <h4 className="mb-4 text-center">Enter your Email and Password</h4>
+                    <form onSubmit={handleSubmit}>
+                        <div className="mb-3">
+                            <label className="form-label">Email address</label>
+                            <input 
+                                type="email" 
+                                className="form-control form-control-lg" 
+                                placeholder="Enter your email"
+                                value={email} 
+                                onChange={(e) => setEmail(e.target.value)} 
+                                required 
+                            />
+                        </div>
+                        <div className="mb-4">
+                            <label className="form-label">Password</label>
+                            <input 
+                                type="password" 
+                                className="form-control form-control-lg" 
+                                placeholder="Enter your password"
+                                value={password} 
+                                onChange={(e) => setPassword(e.target.value)} 
+                                required 
+                            />
+                        </div>
+                        <button type="submit" className="btn btn-primary btn-lg w-100 mb-3">Login</button>
+                        
+                        <div className="text-center mt-3">
+                            <p className="mb-1">Don't have an account?</p>
+                            <Link to="/register" className="fw-bold text-decoration-none">
+                                Register a new student account
+                            </Link>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div className="d-flex flex-column mb-lg-5 mb-3">
-          <label className="form-label" for="passInput">Password</label>
-          <input
-            className="form-control"
-            id="passInput"
-            type="password"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button
-          className="login btn w-100 fw-bold text-white"
-          type="submit"
-          onClick={() => handleLogIn({ email, password })}
-        >
-          Login
-        </button>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default Auth;
