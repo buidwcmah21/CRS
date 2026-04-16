@@ -1,5 +1,6 @@
 version: '3.8'
 services:
+  # Giữ lại các DB nội bộ để làm fallback
   postgres-db:
     image: postgres:16-alpine
     container_name: crs-main-postgres-db
@@ -7,34 +8,32 @@ services:
       POSTGRES_DB: crs_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./db-init:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: crs-main-redis
 
   backend-app:
     build: ./services/backend-app
     container_name: crs-main-backend-app
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+    env_file:
+      - .env
     environment:
-      - JWT_SECRET=crs_secret_key_2024
-      - DB_HOST=postgres-db
-      - DB_PORT=5432
-      - DB_NAME=crs_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-    depends_on:
-      postgres-db:
-        condition: service_healthy
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - NODE_OPTIONS=--dns-result-order=ipv4first
+      # DÒNG QUAN TRỌNG NHẤT ĐỂ CHẠY ĐƯỢC TRÊN CLOUD:
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
 
   kong:
     image: kong:3.4
     container_name: crs-main-kong
+    dns:
+      - 8.8.8.8
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
@@ -49,8 +48,12 @@ services:
   frontend:
     build: ./services/frontend
     container_name: crs-main-frontend
+    dns:
+      - 8.8.8.8
     ports:
       - "5173:5173"
+    depends_on:
+      - kong
 
 volumes:
   postgres-data:

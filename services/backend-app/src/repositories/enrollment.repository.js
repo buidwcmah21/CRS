@@ -15,24 +15,26 @@ const EnrollmentRepository = {
     },
 
     create: async (studentId, courseId) => {
-        // 1. KIỂM TRA XEM ĐÃ ĐĂNG KÝ CHƯA (Để tránh lỗi Duplicate Key)
-        const checkExist = await pool.query(
-            'SELECT id FROM enrollments WHERE student_id = $1 AND course_id = $2',
-            [studentId, courseId]
-        );
-        if (checkExist.rows.length > 0) {
-            throw new Error('Bạn đã đăng ký môn học này rồi!');
-        }
-
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
 
-            // 2. Khóa hàng môn học để check capacity
+            // 1. Kiểm tra xem đã đăng ký chưa
+            const checkExist = await client.query(
+                'SELECT id FROM enrollments WHERE student_id = $1 AND course_id = $2',
+                [studentId, courseId]
+            );
+            if (checkExist.rows.length > 0) {
+                throw new Error('Bạn đã đăng ký môn học này rồi!');
+            }
+
+            // 2. Khóa hàng môn học để check capacity (Chỉ khai báo courseRes 1 lần duy nhất ở đây)
             const courseRes = await client.query(
                 'SELECT capacity FROM courses WHERE id = $1 FOR UPDATE', 
                 [courseId]
             );
+            
+            if (courseRes.rows.length === 0) throw new Error('Môn học không tồn tại');
             const capacity = courseRes.rows[0].capacity;
 
             // 3. Đếm số người đã SUCCESS

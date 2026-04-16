@@ -9,7 +9,7 @@ services:
         paths:
           - /api
         strip_path: false
-    # THÊM ĐOẠN DƯỚI ĐÂY ĐỂ FIX LỖI CORS
+    # Cấu hình Plugin CORS cực kỳ quan trọng để Frontend không bị chặn
     plugins:
       - name: cors
         config:
@@ -19,9 +19,9 @@ services:
             - GET
             - POST
             - PUT
+            - PATCH
             - DELETE
             - OPTIONS
-            - PATCH
           headers:
             - Accept
             - Accept-Version

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/api';
-import toast from 'react-hot-toast'; // Import toast
+import toast from 'react-hot-toast';
 
 const Enrollments = () => {
     const [enrollments, setEnrollments] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     const fetchMyEnrollments = async () => {
         try {
@@ -13,7 +14,11 @@ const Enrollments = () => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             setEnrollments(res.data);
-        } catch (err) { console.error(err); }
+            setLoading(false);
+        } catch (err) {
+            console.error(err);
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
@@ -23,39 +28,67 @@ const Enrollments = () => {
     }, []);
 
     const handleCancel = async (courseId) => {
-        if (!window.confirm("Drop this course?")) return;
+        if (!window.confirm("Bạn có chắc chắn muốn hủy môn học này?")) return;
+        
+        const tId = toast.loading('Đang xử lý hủy môn...');
         try {
             const token = localStorage.getItem('token');
             await axios.delete(`${API_BASE_URL}/enrollments/${courseId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            toast.success("Course dropped successfully!"); // Dùng toast
+            toast.dismiss(tId);
+            toast.success("Đã hủy đăng ký thành công!");
             fetchMyEnrollments();
         } catch (err) {
-            toast.error("Failed to drop course");
+            toast.dismiss(tId);
+            toast.error("Lỗi khi hủy môn học");
         }
     };
 
+    if (loading) return <div className="text-center mt-5"><h3>Đang tải...</h3></div>;
+
     return (
         <div className="container mt-4">
-            <h2 className="mb-4 fw-bold text-primary">My Schedule</h2>
-            <div className="table-responsive shadow-sm rounded">
-                <table className="table table-hover align-middle bg-white mb-0">
-                    <thead className="table-light">
-                        <tr><th>Course</th><th>Status</th><th className="text-center">Action</th></tr>
-                    </thead>
-                    <tbody>
-                        {enrollments.map(item => (
-                            <tr key={item.id}>
-                                <td><div className="fw-bold">{item.course_name}</div><div className="small text-muted">{item.course_code}</div></td>
-                                <td><span className={`badge rounded-pill ${item.status === 'SUCCESS' ? 'bg-success' : 'bg-warning text-dark'}`}>{item.status}</span></td>
-                                <td className="text-center"><button className="btn btn-sm btn-outline-danger" onClick={() => handleCancel(item.course_id)}>Drop</button></td>
+            <div className="card shadow-sm border-0 rounded-3">
+                <div className="card-header bg-white py-3">
+                    <h3 className="mb-0 fw-bold text-primary">Kết quả đăng ký học phần</h3>
+                </div>
+                <div className="card-body p-0">
+                    <table className="table table-hover align-middle mb-0">
+                        <thead className="table-light">
+                            <tr>
+                                <th className="ps-4">Môn học</th>
+                                <th>Học kỳ</th>
+                                <th>Trạng thái</th>
+                                <th className="text-center pe-4">Thao tác</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {enrollments.map(item => (
+                                <tr key={item.id}>
+                                    <td className="ps-4">
+                                        <div className="fw-bold">{item.course_name}</div>
+                                        <div className="small text-muted">{item.course_code} • Nhóm {item.group_code}</div>
+                                    </td>
+                                    <td>{item.semester}</td>
+                                    <td>
+                                        {item.status === 'SUCCESS' ? (
+                                            <span className="badge rounded-pill bg-success px-3 py-2">THÀNH CÔNG</span>
+                                        ) : (
+                                            <span className="badge rounded-pill bg-warning text-dark px-3 py-2">ĐANG CHỜ</span>
+                                        )}
+                                    </td>
+                                    <td className="text-center pe-4">
+                                        <button className="btn btn-outline-danger btn-sm rounded-pill px-3" onClick={() => handleCancel(item.course_id)}>Hủy môn</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
 };
+
 export default Enrollments;

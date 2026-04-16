@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useState, useEffect, createContext, useContext } from 'react';
-import { API_BASE_URL } from './config/api'; // Lưu ý: ở đây là ./config/api
+import { API_BASE_URL } from './config/api';
 
 const AuthContext = createContext();
 
@@ -33,6 +33,13 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // HÀM MỚI: Cập nhật thông tin user (như avatar) vào bộ nhớ ngay lập tức
+    const updateUser = (newUserData) => {
+        const updatedUser = { ...user, ...newUserData };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+    };
+
     const logout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -42,7 +49,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, isAuthReady, user, handleLogIn, logout }}>
+        <AuthContext.Provider value={{ isAuthenticated, isAuthReady, user, handleLogIn, logout, updateUser }}>
             {children}
         </AuthContext.Provider>
     );
