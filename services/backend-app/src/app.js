@@ -6,7 +6,11 @@ const courseRoutes = require('./routes/course.routes');
 const enrollmentRoutes = require('./routes/enrollment.routes');
 
 const app = express();
-app.use(cors());
+// Sửa đoạn này trong app.js
+app.use(cors({
+    origin: '*', // Cho phép tất cả các nguồn truy cập vào API trên Cloud
+    credentials: true
+}));
 
 // TĂNG GIỚI HẠN NHẬN DỮ LIỆU LÊN 5MB ĐỂ CHỨA ẢNH
 app.use(express.json({ limit: '5mb' }));
