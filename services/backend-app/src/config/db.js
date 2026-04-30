@@ -1,19 +1,25 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+// Cấu hình Pool kết nối
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
-        rejectUnauthorized: false
+        rejectUnauthorized: false // Bắt buộc để chạy trên Render/Supabase
     },
-    // TỐI ƯU KẾT NỐI (Connection Pooling)
-    max: 20, // Cho phép tối đa 20 kết nối đồng thời
-    idleTimeoutMillis: 30000, // Giữ kết nối chờ trong 30s thay vì đóng ngay
-    connectionTimeoutMillis: 5000, // Đợi tối đa 5s để kết nối, tránh treo web
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
 });
 
-pool.on('connect', () => {
-    console.log('🐘 [PostgreSQL] Đã giữ chỗ kết nối sẵn sàng!');
+// Logic kiểm tra kết nối và in log rõ ràng
+pool.connect((err, client, release) => {
+    if (err) {
+        console.error('❌ [DATABASE] Lỗi kết nối Supabase:', err.message);
+    } else {
+        console.log('🚀 [DATABASE] Kết nối Cloud thành công - Hệ thống sẵn sàng!');
+        release();
+    }
 });
 
 module.exports = pool;
