@@ -1,15 +1,15 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const compression = require('compression'); // Thư viện nén dữ liệu
-const axios = require('axios'); // Dùng để tự ping
+const compression = require('compression');
+const axios = require('axios');
 const authRoutes = require('./routes/auth.routes');
 const courseRoutes = require('./routes/course.routes');
 const enrollmentRoutes = require('./routes/enrollment.routes');
 
 const app = express();
 
-// 1. Bật nén Gzip: Giúp dữ liệu truyền đi nhanh hơn gấp 3-5 lần
+// Nén dữ liệu để tăng tốc
 app.use(compression());
 
 app.use(cors({
@@ -17,7 +17,6 @@ app.use(cors({
     credentials: true
 }));
 
-// Tăng giới hạn để nhận ảnh avatar mượt mà
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
@@ -26,20 +25,23 @@ app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 
+// Trang chủ để kiểm tra server sống hay chết
+app.get('/', (req, res) => res.send('NEXUS API IS ALIVE 🚀'));
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 Backend xịn xò đang chạy tại port ${PORT}`);
+    console.log(`🚀 Backend đang chạy tại port ${PORT}`);
 });
 
-// 2. Cơ chế "Keep-alive": Cứ 14 phút tự gọi chính mình 1 lần để Render không tắt server (Cold Start)
-const RENDER_URL = 'https://crs-backend-nexus.onrender.com/api/courses'; // Thay bằng link thật của bạn
+// Cơ chế tự đánh thức server Render (Keep-alive)
+const RENDER_URL = `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'crs-backend-nexus.onrender.com'}/api/auth/user`;
 setInterval(async () => {
     try {
         await axios.get(RENDER_URL);
-        console.log('⚡ [Keep-alive] Đã đánh thức server thành công!');
+        console.log('⚡ [Keep-alive] Ping thành công');
     } catch (err) {
-        console.log('⚡ [Keep-alive] Server vẫn đang thức.');
+        // Bỏ qua lỗi vì mục đích chỉ là để server không ngủ
     }
-}, 14 * 60 * 1000); 
+}, 14 * 60 * 1000);
 
 module.exports = app;
