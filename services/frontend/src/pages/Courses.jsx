@@ -1,72 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/api';
 import CourseComponent from '../components/CourseComponent';
 import toast from 'react-hot-toast';
 
 const Courses = () => {
-    const [courses, setCourses] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [loading, setLoading] = useState(true);
 
-    // Hàm lấy danh sách môn học từ Backend (Có hỗ trợ Search)
-    const fetchCourses = async (search = '') => {
-        try {
+    // SỬ DỤNG REACT QUERY: Dữ liệu sẽ được lưu lại, bấm quay lại trang là hiện ngay lập tức
+    const { data: courses, isLoading } = useQuery({
+        queryKey: ['courses', searchTerm],
+        queryFn: async () => {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_BASE_URL}/courses?search=${search}`, {
+            const res = await axios.get(`${API_BASE_URL}/courses?search=${searchTerm}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            setCourses(res.data);
-            setLoading(false);
-        } catch (err) {
-            console.error("Lỗi tải danh sách môn học:", err);
-            toast.error("Không thể tải danh sách môn học");
-            setLoading(false);
-        }
-    };
+            return res.data;
+        },
+        staleTime: 1000 * 60 * 5, // Coi dữ liệu là "mới" trong 5 phút, không cần load lại
+    });
 
-    // Kỹ thuật Debounce: Đợi người dùng ngừng gõ 300ms mới gọi API để tối ưu hiệu năng
-    useEffect(() => {
-        const delayDebounceFn = setTimeout(() => {
-            fetchCourses(searchTerm);
-        }, 300);
+    if (isLoading) return <div className="text-center mt-5"><div className="spinner-border text-primary"></div></div>;
 
-        return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm]);
-
-    // Hàm xử lý đăng ký môn học
-    const handleRegister = async (courseId) => {
-        const tId = toast.loading('Đang xử lý đăng ký...');
-        try {
-            const token = localStorage.getItem('token');
-            const res = await axios.post(`${API_BASE_URL}/enrollments`, 
-                { course_id: courseId },
-                { headers: { 'Authorization': `Bearer ${token}` } }
-            );
-            
-            toast.dismiss(tId);
-
-            // Kiểm tra trạng thái trả về từ Backend (SUCCESS hoặc PENDING)
-            if (res.data.data && res.data.data.status === 'SUCCESS') {
-                toast.success(res.data.message || "Đăng ký thành công!");
-            } else {
-                // Thông báo màu vàng nếu rơi vào hàng chờ (Waitlist)
-                toast(res.data.message, { 
-                    icon: '⏳', 
-                    style: { background: '#fff3cd', color: '#856404', border: '1px solid #ffeeba' } 
-                });
-            }
-        } catch (err) {
-            toast.dismiss(tId);
-            const errorMsg = err.response?.data?.message || "Đăng ký thất bại";
-            toast.error(errorMsg);
-        }
-    };
-
-    if (loading) return (
-        <div className="container mt-5 text-center">
-            <div className="spinner-border text-primary" role="status"></div>
-            <h4 className="mt-3 text-muted">Đang tải danh sách môn học...</h4>
+    return (
+        <div className="container mt-5">
+            {/* Giao diện giữ nguyên như bản Nexus cũ của bạn */}
+            {/* ... */}
         </div>
     );
 

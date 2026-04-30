@@ -10,7 +10,7 @@ exports.register = async (req, res) => {
         const userExists = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
         if (userExists.rows.length > 0) {
             return res.status(400).json({ message: 'Email này đã được sử dụng' });
-        }
+        } 
 
         // Hash mật khẩu
         const salt = await bcrypt.genSalt(10);

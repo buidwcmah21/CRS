@@ -17,30 +17,19 @@ const clearCourseCache = async () => {
 exports.getAllCourses = async (req, res) => {
     try {
         const { search } = req.query;
-        // Tạo key dựa trên từ khóa tìm kiếm để cache chính xác từng kết quả
         const cacheKey = search ? `courses:search:${search.toLowerCase()}` : 'courses:all';
 
-        // 1. THỬ LẤY TỪ REDIS
-        try {
-            const cachedData = await redisClient.get(cacheKey);
-            if (cachedData) {
-                console.log('⚡ [CACHE HIT] Returning data from Redis');
-                return res.json(JSON.parse(cachedData));
-            }
-        } catch (redisErr) {
-            console.error('⚠️ Redis Get Error (Falling back to DB):', redisErr);
+        // 1. Kiểm tra Redis (Tốc độ RAM)
+        const cachedData = await redisClient.get(cacheKey);
+        if (cachedData) {
+            return res.json(JSON.parse(cachedData));
         }
 
-        // 2. NẾU KHÔNG CÓ, LẤY TỪ POSTGRESQL
-        console.log('🐢 [CACHE MISS] Fetching from PostgreSQL...');
+        // 2. Nếu không có, lấy từ Postgres (Tốc độ Ổ cứng)
         const courses = await CourseRepository.findAll(search);
 
-        // 3. LƯU VÀO REDIS (Hết hạn sau 5 phút - 300 giây)
-        try {
-            await redisClient.setEx(cacheKey, 300, JSON.stringify(courses));
-        } catch (redisErr) {
-            console.error('⚠️ Redis Set Error:', redisErr);
-        }
+        // 3. Lưu vào Redis trong 1 giờ (3600 giây) vì danh sách môn học ít thay đổi
+        await redisClient.setEx(cacheKey, 3600, JSON.stringify(courses));
 
         res.json(courses);
     } catch (error) {
