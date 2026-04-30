@@ -1,23 +1,27 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-// Cấu hình Pool kết nối
+// Tách nhỏ thông tin để tránh lỗi định dạng chuỗi của Supabase Pooler
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    user: 'postgres.ambcdexcefuqroladgnp', // Tên đăng nhập đầy đủ
+    host: 'aws-1-ap-south-1.pooler.supabase.com',
+    database: 'postgres',
+    password: 'Khongnoi2110',
+    port: 6543,
     ssl: {
-        rejectUnauthorized: false // Bắt buộc để chạy trên Render/Supabase
+        rejectUnauthorized: false
     },
+    // Các tham số tối ưu cho môi trường Cloud
     max: 10,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
 });
 
-// Logic kiểm tra kết nối và in log rõ ràng
 pool.connect((err, client, release) => {
     if (err) {
-        console.error('❌ [DATABASE] Lỗi kết nối Supabase:', err.message);
+        console.error('❌ [DATABASE] Lỗi kết nối:', err.message);
     } else {
-        console.log('🚀 [DATABASE] Kết nối Cloud thành công - Hệ thống sẵn sàng!');
+        console.log('🚀 [DATABASE] ĐÃ THÔNG SUỐT LÊN SUPABASE CLOUD!');
         release();
     }
 });
